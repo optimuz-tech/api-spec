@@ -1,0 +1,3805 @@
+openapi: 3.0.1
+info:
+  title: GoBeyond API
+  version: '0.42'
+  description: |-
+    GoBeyond API Specification
+    Dev Credentials:
+    App client id: 972onotqsqp51clb3288b3ir9
+    App client secret: ja28q5kf6c49taa8dq6qmhvfl7a2q05v0trfe8vdo1khdkakk2j
+
+    Staging Credentials
+    App client id: 32ns3hov2apk2o02ami1c02iqr
+    App client secret: rulipljg9mub22iahq1rea4s2an1nbqkthr7a3ebo8qs05veovj
+  contact:
+    name: Benaiah
+    email: benaiahj@optimuz.tech
+    url: 'https://ind.delve.office.com/?u=3edaa07f-a05a-4780-a68f-ae3edc1947ec&v=work'
+servers:
+  - url: 'https://api-dev.gobeyond.app'
+    description: Development Server
+  - url: 'https://api-staging.gobeyond.app'
+    description: Staging Server
+  - url: 'https://api.gobeyond.app'
+    description: Production Server
+tags:
+  - name: Users
+    description: API related to Users
+  - name: OTP
+    description: API related to Users Verification (OTP)
+  - name: Contacts
+    description: API related to User-Contacts
+  - name: Document Service
+    description: API related to Document Service
+  - name: Web
+    description: API related to Web App
+  - name: Message
+    description: APIs for Messaging Service
+  - name: Sync
+    description: APIs for Sync Service
+  - name: Quick Notes
+    description: APIs for Quick Notes Service
+  - name: Share
+    description: APIs for Sharing using alternate methods
+  - name: Custom Button
+    description: APIs for custom buttons
+  - name: Tools - Task List
+    description: APIs for Tools
+  - name: Logging
+    description: APIs for event logging
+  - name: Health
+    description: APIs for checking service health
+  - name: Configuration
+    description: APIs for managing application configuration
+  - name: Utils
+    description: APIs for various utilities
+  - name: Website
+    description: URLs in the public website
+  - name: Public
+    description: URLs that can be accessed using read-only auth credentials
+paths:
+  /users:
+    post:
+      summary: Create a new user
+      tags:
+        - Users
+      responses:
+        '200':
+          description: OK
+      description: Create a new user in AweMe
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserModel'
+        description: ''
+      operationId: '1'
+  /users/signup:
+    post:
+      summary: Signup User
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUpUserResponse'
+      description: Signup a user. This initites the OTP verification process.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpUserRequest'
+        description: An object of Signup User Request
+      operationId: '2'
+      tags:
+        - Users
+  '/users/{userId}':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The unique id of the user
+    get:
+      summary: GET User by UserId
+      tags:
+        - Users
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserModel'
+        '209':
+          description: Public profile not enabled. When applyPermissions=PUBLIC_PROFILE.
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      description: Gets the user by user id
+      operationId: '3'
+      parameters:
+        - schema:
+            type: string
+            enum:
+              - NONE
+              - CONTACT
+              - PUBLIC_PROFILE
+          in: query
+          name: applyPermissions
+          description: Indicate whether permissions should be applied to the profile fields.
+        - schema:
+            type: string
+          in: query
+          name: contactId
+          description: 'If apply permissions is CONTACT, then apply permissions for the specified contactId.'
+        - schema:
+            type: string
+          in: query
+          name: v
+          description: Version
+    put:
+      summary: Update User by UserId
+      responses:
+        '200':
+          description: OK
+      description: Update user by ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserModel'
+      operationId: '4'
+      tags:
+        - Users
+    delete:
+      summary: Delete User by UserId
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      description: Delete user by id
+      operationId: '8'
+      tags:
+        - Users
+  '/users/{userId}/identities':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get user identities
+      tags:
+        - Users
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: number
+                  firstName:
+                    type: string
+                  lastName:
+                    type: string
+                  userIdentities:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VerifiedUserIdentity'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      description: Get a list of verified user identities
+      operationId: '5'
+  '/users/search/{key}':
+    parameters:
+      - name: key
+        in: path
+        required: true
+        schema:
+          type: string
+        description: 'The search key - name, email or phone number.'
+    get:
+      summary: Your GET endpoint
+      tags:
+        - Users
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                description: list of users matching the search criteria
+                items:
+                  $ref: '#/components/schemas/UserBasicModel'
+      operationId: '6'
+      description: 'Search using a search key (name, phone, email, etc)'
+  /users/otp/verify:
+    post:
+      summary: OTP Verify
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserModel'
+        '209':
+          description: The OTP is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '210':
+          description: The OTP has expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Bad Request - The request payload is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      description: "Verify User's OTP"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOtpRequest'
+            examples:
+              Example:
+                value:
+                  refNo: eac4aae8-f3d8-11e9-81b4-2a2ae2dbcce4
+                  OTP: '325485'
+                  type: Phone
+      tags:
+        - OTP
+      operationId: '20'
+  /users/otp/resend:
+    post:
+      summary: OTP Resend
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+                description: New Reference number
+        '400':
+          description: The reference number is invalid
+      description: Resends the OTP for User
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: string
+              description: The unique Reference number received as part of the initial signup request
+        description: The unique Reference number received as part of the initial user signup response
+      tags:
+        - OTP
+      operationId: '12'
+  '/users/{userId}/contacts':
+    parameters:
+      - name: userId
+        in: path
+        schema:
+          type: string
+        required: true
+    get:
+      summary: Get Contacts for User
+      tags:
+        - Contacts
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                description: List of contacts with their basic info
+                items:
+                  $ref: '#/components/schemas/ContactSummary'
+        '404':
+          description: User with specified id not found
+      description: Gets all contacts for the specified user
+      operationId: '10'
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: timestamp
+          description: Server timestamp. Specify the timestamp to get only records modified after this timestamp.
+        - schema:
+            type: boolean
+            default: 'false'
+          in: query
+          name: includeDetails
+          description: Indicates whether additional fields should also be fetched.
+        - schema:
+            type: string
+          in: query
+          name: v
+          description: Version
+    post:
+      summary: Create new contact
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSummary'
+      operationId: '11'
+      description: Creates a new contact for the specified User
+      tags:
+        - Contacts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactActionRequest'
+            examples: {}
+  '/users/{userId}/contacts/{contactId}':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: contactId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get contact details
+      tags:
+        - Contacts
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Contact'
+        '404':
+          description: User or Contact with specified id not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      description: Gets detailed information of a contact
+      operationId: '13'
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: v
+          description: Version
+    put:
+      summary: ''
+      responses:
+        '200':
+          description: OK
+      description: Updates the contact information
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactActionRequest'
+        description: ''
+      tags:
+        - Contacts
+      operationId: '15'
+    delete:
+      summary: Delete a Contact
+      responses:
+        '200':
+          description: OK
+      description: Delete the specified contact for the specified User
+      tags:
+        - Contacts
+      operationId: '14'
+  /web/login/generateCode:
+    get:
+      summary: Generate code for Web Login
+      tags:
+        - Web
+      operationId: '16'
+      description: Generates a unique code for Web Login
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                    description: A unique code to input to the match endpoint
+                  expirySec:
+                    type: string
+                    description: Expiry time in seconds
+    parameters: []
+  /web/login:
+    post:
+      summary: Login to Web App
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                    description: A unique session id session
+                  user:
+                    $ref: '#/components/schemas/UserModel'
+        '204':
+          description: No matching session found for the specified code
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: The code generated using the /login/generateCode endpoint
+      description: Login to web app using the secret code
+      tags:
+        - Web
+      operationId: '17'
+  '/messaging/{userId}/conversations/{conversationId}/messages':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        description: The user id
+        schema:
+          type: string
+      - name: conversationId
+        in: path
+        required: true
+        description: The conversation id
+        schema:
+          type: string
+    get:
+      summary: Gets all messages for a conversation
+      tags:
+        - Message
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: timestamp
+          description: 'If provided, endpoint will only return all messages after the specified timestamp'
+      description: Gets all messages for the specified conversation
+      operationId: '22'
+    post:
+      summary: Create messages in a converation
+      responses:
+        '200':
+          description: OK
+      description: Creates one or more new messages in the specified conversation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Message'
+      operationId: '23'
+      tags:
+        - Message
+  '/messaging/{userId}/conversations':
+    post:
+      summary: Create Conversations for a user
+      tags:
+        - Message
+      responses:
+        '200':
+          description: OK
+        '209':
+          description: Did not find even one matching user for the specified contact. (Send invitation instead)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '210':
+          description: Found multiple users matching the contact details. Unable to resolve conflict. The data of ErrorResponse will have a list of MatchedUserBasicModel with dictionary of profile fields used for matching. (Prompt user to select one)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Invalid User Id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      description: To create a new conversation between a given members
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: A client generated UUID
+                messages:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Message'
+                title:
+                  type: string
+                createdAt:
+                  type: string
+                  format: date-time
+                members:
+                  type: array
+                  description: Array of participating users
+                  items:
+                    type: object
+                    properties:
+                      userId:
+                        type: string
+                type:
+                  $ref: '#/components/schemas/ConversationTypeEnum'
+            examples:
+              Connect Request:
+                value:
+                  id: cf51c780-09e7-11ea-e38c-99f9f4a38e66
+                  title: Sent a connection request
+                  createdAt: '2019-11-18T09:43:00.856185Z'
+                  messages:
+                    - id: cf51c780-09e7-11ea-b67d-359369b3e21b
+                      messageType: CONNECT_REQUEST
+                      createdAt: '2019-11-18T09:43:00.856185Z'
+                      data:
+                        text: ''
+                        srcContactId: c9cbdbd0-09e6-11ea-c7b8-15d1ade0baa6
+                        destUserId: null
+                      notification: null
+                  members:
+                    - userId: '106'
+                      status: ACTIVE
+                      lastReadMessageId: null
+                      isFavourite: false
+        description: A conversation object for the user
+      operationId: '19'
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: qc
+          description: The quick code if the mode is QUICK_CODE.
+    parameters:
+      - schema:
+          type: string
+        name: userId
+        in: path
+        required: true
+    get:
+      summary: Get conversations for user
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                description: A list of conversation after the specified timestamp
+                items:
+                  $ref: '#/components/schemas/Conversation'
+              examples:
+                example-1: {}
+      description: Gets list of conversations for a user
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: timestamp
+          description: The last synched timestamp
+      operationId: '21'
+      tags:
+        - Message
+  '/messaging/{userId}/conversations/{conversationId}':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: conversationId
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      summary: Update a conversation
+      responses:
+        '200':
+          description: OK
+      description: Updates the specified conversation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationUser'
+        description: ''
+      operationId: '26'
+      tags:
+        - Message
+  '/users/{userId}/quicknotes':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The unique id of the user
+    get:
+      summary: Gets quicknotes for a user
+      tags:
+        - Quick Notes
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuickNote'
+      operationId: '27'
+      description: Get all the quicknotes for a user
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: timestamp
+          description: Specify timestamp to fetch only records updated after this.
+    post:
+      summary: Create a quick note
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuickNote'
+      description: Create a quicknote for the specified user
+      tags:
+        - Quick Notes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuickNoteBasic'
+        description: ''
+      operationId: '29'
+  '/users/{userId}/quicknotes/{quickNoteId}':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: quickNoteId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Get a quick note
+      tags:
+        - Quick Notes
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuickNote'
+      description: Gets the quick note specified by the id
+      operationId: '28'
+    put:
+      summary: Update a quick note
+      responses:
+        '200':
+          description: OK
+        '210':
+          description: Quicknote is locked for editing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserBasicModel'
+      description: Update a quicknote by id
+      operationId: '30'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuickNoteBasic'
+        description: ''
+      tags:
+        - Quick Notes
+    delete:
+      summary: Delete a quick note
+      responses:
+        '200':
+          description: OK
+        '210':
+          description: Quicknote is locked for editing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserBasicModel'
+      description: Delete the specified quick note
+      operationId: '31'
+      tags:
+        - Quick Notes
+    patch:
+      summary: Update quick note
+      operationId: patch-users-userId-quicknotes-quickNoteId
+      responses:
+        '200':
+          description: OK
+      description: Updates specific fields in the specified quick note
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuickNoteBasic'
+      tags:
+        - Quick Notes
+  /messaging/handleEvent:
+    post:
+      summary: Handles Messaging event
+      responses:
+        '200':
+          description: OK
+      description: Handles a messaging event from SNS. This endpoint must also handle SNS subscription confirmation request.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: The event body
+              properties:
+                eventId:
+                  type: string
+                  description: A client generated UUID
+                eventType:
+                  type: string
+                  description: The event types as defined in the enum
+                  enum:
+                    - CONV_NEW
+                    - MSG_NEW
+                    - CONV_UPDATE
+                    - MSG_UPDATE
+                status:
+                  type: string
+                  enum:
+                    - PENDING
+                    - COMPLETED
+                payload:
+                  type: object
+                  description: An object based on the event type
+                userId:
+                  type: string
+                  description: ID of user for which the task is being performed
+              required:
+                - eventId
+                - eventType
+                - payload
+                - userId
+      operationId: '33'
+      tags:
+        - Message
+  /web/login/match:
+    post:
+      summary: Matches a user
+      responses:
+        '201':
+          description: Created match between code and user id
+        '404':
+          description: Code Not Found
+      description: Matches a user against a web-login code
+      operationId: '39'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  description: The user id to match against
+                code:
+                  type: string
+                  description: The code generated by the /generateCode endpoint
+            examples:
+              example-1:
+                value:
+                  userId: '5'
+                  code: 83490
+      tags:
+        - Web
+  '/web/login/session/{sessionId}':
+    get:
+      summary: Get session status
+      tags:
+        - Web
+      responses:
+        '200':
+          description: OK
+        '404':
+          description: The session is Not Found. Force logout from Web App.
+      description: Gets the status of the specified Web Session
+      operationId: '40'
+    parameters:
+      - schema:
+          type: string
+        name: sessionId
+        in: path
+        required: true
+        description: The session id
+  '/sync/users/{userId}/status':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The id of the user for whom the sync is being done.
+    post:
+      summary: Get sync status for entities
+      tags:
+        - Sync
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    entity:
+                      $ref: '#/components/schemas/SyncEntity'
+                    hasChanges:
+                      type: boolean
+                      description: Gets a value indicating whether the server has changes for this entity.
+              examples:
+                Sample:
+                  value:
+                    - entity: USER
+                      hasChanges: 'false'
+                    - entity: CONTACT
+                      hasChanges: 'true'
+                    - entity: CONVERSATION
+                      hasChanges: 'true'
+                    - entity: QUICK_NOTE
+                      hasChanges: 'false'
+        '222':
+          description: The user does not exist
+      description: Gets the sync status against each Entity
+      operationId: '41'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  entity:
+                    $ref: '#/components/schemas/SyncEntity'
+                  timestamp:
+                    type: string
+                    description: The last updated timestamp for the entity (ISO8604 format). Server will check for changes after this timestamp.
+                required:
+                  - entity
+                  - timestamp
+            examples:
+              Sample:
+                value:
+                  - entity: USER
+                    timestamp: '2019-11-19T21:18:33.000Z'
+                  - entity: CONTACT
+                    timestamp: '2019-11-18T21:18:33.000Z'
+                  - entity: CONVERSATION
+                    timestamp: '2019-11-18T21:17:33.000Z'
+                  - entity: QUICK_NOTE
+                    timestamp: '2019-11-18T20:17:00.000Z'
+        description: ''
+  '/docstore/{userId}/documents/{docId}/uri':
+    parameters:
+      - name: docId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Client generated Document ID (UUID)
+      - schema:
+          type: string
+        name: userId
+        in: path
+        required: true
+        description: The id of the user invoking this API.
+    get:
+      summary: Get URI
+      tags:
+        - Document Service
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uploadUri:
+                    type: string
+                    description: "The upload URI if query param 'upload' is set to true"
+                  uploadUriExpiresAt:
+                    type: string
+                    description: "The upload URI expiry timestamp (if query param 'upload' is set to true)"
+                  readUri:
+                    type: string
+                    description: Read URI
+        '223':
+          description: Document upload limit exceeded. Details in the error data object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      operationId: '42'
+      description: Generates a URI for Document upload/download
+      parameters:
+        - schema:
+            type: boolean
+          in: query
+          name: upload
+          description: Indicate whether an upload URL should be generated.
+        - schema:
+            type: string
+          in: query
+          name: docName
+          description: The name of the document
+        - schema:
+            type: boolean
+          in: query
+          name: renameIfExists
+          description: 'If true, renames the file if it already exists;otherwise overwrites.'
+        - schema:
+            type: string
+            enum:
+              - CONTACT_PROFILE_PIC
+              - CONTACT_DOCUMENT
+              - QUICK_NOTE_ATTACHMENT
+              - MESSAGE_IMAGE
+              - MESSAGE_DOCUMENT
+              - USER_PROFILE_PIC
+              - USER_DOCUMENT
+          in: query
+          name: docEntity
+        - schema:
+            type: string
+          in: query
+          name: docEntityId
+          description: |-
+            CONTACT PROFILE PIC = _contactId_
+            CONTACT DOCUMENT = _documentId_
+            QUICK_NOTE_ATTACHMENT = _quickNoteId_
+            USER DOCUMENT = _userId_
+            MESSAGE IMAGE = _messageId_
+            MESSAGE DOC = _messageId_
+        - schema:
+            type: string
+          in: query
+          name: fileSize
+          description: File size in KB.
+  '/docstore/{userId}/documents/{docId}':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: User id
+      - name: docId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Document id
+    delete:
+      summary: Delete document for user
+      responses:
+        '200':
+          description: OK
+      description: Deletes the specified document for the specified user
+      operationId: '46'
+      tags:
+        - Document Service
+    patch:
+      summary: "Patch a user's document"
+      operationId: patch-docstore-userId-documents-docId
+      responses:
+        '200':
+          description: OK
+      description: Update specific fields for the specified document for the user.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocstoreDocumentBasic'
+        description: Specify only the fields you want to update.
+      tags:
+        - Document Service
+  '/sync/users/{userId}/pull':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Id of the user whose data is synched
+    post:
+      summary: Pulls the changes from server
+      tags:
+        - Sync
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SyncRecord'
+              examples:
+                Sample:
+                  value:
+                    - entity: USER
+                      records: []
+                    - entity: CONTACT
+                      hasChanges: 'true'
+                    - entity: CONVERSATION
+                      hasChanges: 'true'
+                    - entity: QUICK_NOTE
+                      hasChanges: 'false'
+      description: Gets the sync status against each Entity
+      operationId: '47'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  entity:
+                    type: string
+                    enum:
+                      - USER
+                      - CONTACT
+                      - CONVERSATION
+                      - QUICK_NOTE
+                      - FILE
+                  timestamp:
+                    type: string
+                    description: The last updated timestamp for the entity (ISO8604 format). Server will check for changes after this timestamp.
+                required:
+                  - entity
+                  - timestamp
+            examples:
+              Sample:
+                value:
+                  - entity: USER
+                    timestamp: '2019-11-19T21:18:33.000Z'
+                  - entity: CONTACT
+                    timestamp: '2019-11-18T21:18:33.000Z'
+                  - entity: CONVERSATION
+                    timestamp: '2019-11-18T21:17:33.000Z'
+                  - entity: QUICK_NOTE
+                    timestamp: '2019-11-18T20:17:00.000Z'
+        description: ''
+  '/docstore/{userId}/documents':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The id of the user
+    get:
+      summary: Get documents for User
+      tags:
+        - Document Service
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocstoreDocument'
+      description: Gets all documents for the specified user
+      operationId: '43'
+      parameters:
+        - schema:
+            type: string
+            enum:
+              - CONTACT_PROFILE_PIC
+              - CONTACT_DOCUMENT
+              - QUICK_NOTE_ATTACHMENT
+              - MESSAGE_IMAGE
+              - MESSAGE_DOCUMENT
+              - USER_PROFILE_PIC
+              - USER_DOCUMENT
+          in: query
+          name: docEntity
+          description: ''
+          required: true
+        - schema:
+            type: string
+          in: query
+          name: timestamp
+          description: Server timestamp. Specify the timestamp to get only records modified after this timestamp.
+  '/users/{userId}/quicknotes/{quickNoteId}/lock':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: quickNoteId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Acquire a lock
+      tags:
+        - Quick Notes
+      responses:
+        '200':
+          description: Lock acquired
+        '210':
+          description: Quicknote is already locked by another user for editing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserBasicModel'
+      operationId: get-users-quicknotes-lock
+      description: Acquire a lock for editing quicknotes
+    delete:
+      summary: Release QuickNote lock
+      operationId: delete-users-quicknotes-lock
+      responses:
+        '200':
+          description: OK
+      tags:
+        - Quick Notes
+      description: Release the quicknote lock
+  '/messaging/conversations/{conversationId}/addRecipient':
+    parameters:
+      - name: conversationId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The client generated conversation id.
+    post:
+      summary: Add a recipient to a conversation
+      operationId: post-messaging-conversations-conversationId-addRecipient
+      responses:
+        '200':
+          description: OK
+        '209':
+          description: The conversation does not exist.
+      description: Adds a recipient to the specified conversation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  description: The id of user to add to the conversation.
+      tags:
+        - Message
+      parameters:
+        - schema:
+            type: boolean
+            default: 'false'
+          in: query
+          name: shareHistory
+          description: The new recipient will get access to all the messages before being added to conversation.
+        - schema:
+            type: string
+            enum:
+              - BCC
+          in: query
+          name: recipientType
+          description: The recipient type.
+  '/users/{userId}/customButtons':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: User id
+    get:
+      summary: GET custom buttons
+      tags:
+        - Custom Button
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                description: Collection of custom buttons for user
+                items:
+                  $ref: '#/components/schemas/CustomButton'
+      operationId: get-users-userId-customButtons
+      description: Get list of custom buttons for user
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: timestamp
+          description: The last synched timestamp.
+    post:
+      summary: Create custom button
+      operationId: post-users-userId-customButtons
+      responses:
+        '200':
+          description: OK
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                workflow:
+                  $ref: '#/components/schemas/WorkflowDefinition'
+            examples:
+              example-1:
+                value:
+                  id: string
+                  workflow:
+                    startState: firstState
+                    states:
+                      firstState:
+                        stateType: DISPLAY_MESSAGE
+                        messageType: null
+                        recipients: null
+                        nextState: secondState
+                        isEndState: false
+                        data:
+                          text: string
+                      secondState:
+                        stateType: MESSAGE
+                        messageType: TEXT
+                        recipients:
+                          contacts:
+                            - id: string
+                              matchedUserId: string
+                              firstName: string
+                              lastName: string
+                              isFavourite: true
+                              connectedStatus: notConnected
+                              createdAt: '2019-10-20T21:55:00Z'
+                              updatedAt: '2019-10-20T21:55:00Z'
+                              profilePhoto: string
+                              preferredName: string
+                          phoneNos: null
+                        nextState: thirdState
+                        isEndState: false
+                        data:
+                          text: string
+                      thirdState:
+                        stateType: CALL
+                        recipients:
+                          contacts: null
+                          phoneNos:
+                            - '911'
+                        nextState: null
+                        isEndState: true
+      tags:
+        - Custom Button
+      description: Create a new custom button
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: contactId
+          description: Specify if the custom button is to be created for a contact of the user.
+  '/users/{userId}/customButtons/{buttonId}':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: buttonId
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      summary: Update custom button
+      operationId: put-users-userId-customButtons-buttonId
+      responses:
+        '200':
+          description: OK
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomButton'
+      description: Updates the specified custom button
+      tags:
+        - Custom Button
+    delete:
+      summary: ''
+      operationId: delete-users-userId-customButtons-buttonId
+      responses:
+        '200':
+          description: OK
+      description: Deletes the specified custom button
+      tags:
+        - Custom Button
+  '/users/{userId}/tools/tasklists':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: The user id
+    get:
+      summary: Gets all tasklists for user
+      tags:
+        - Tools - Task List
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskList'
+      operationId: get-tools-userId-tasklists
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: timestamp
+          description: Last synched timestamp.
+      description: Gets TaskLists for user
+    post:
+      summary: Creates a tasklist for user
+      operationId: post-users-userId-tools-tasklists
+      responses:
+        '200':
+          description: OK
+      description: Creates a tasklist for the specified user
+      tags:
+        - Tools - Task List
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskList'
+  '/users/{userId}/tools/tasklists/{taskListId}':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: taskListId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Gets a task list by id
+      tags:
+        - Tools - Task List
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskList'
+        '209':
+          description: Not Found
+      operationId: get-users-userId-tools-tasklists-taskListId
+      description: Gets Task List by Id
+    delete:
+      summary: Deletes a task list by id
+      operationId: delete-users-userId-tools-tasklists-taskListId
+      responses:
+        '200':
+          description: Ok
+        '209':
+          description: Task List not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Tools - Task List
+      description: Deletes the specified task list for user
+  '/users/{userId}/tools/tasklists/{taskListId}/tasks/{taskId}':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: taskListId
+        in: path
+        required: true
+        schema:
+          type: string
+      - schema:
+          type: string
+        name: taskId
+        in: path
+        required: true
+    get:
+      summary: Gets a task by id
+      tags:
+        - Tools - Task List
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskItem'
+      operationId: get-users-userId-tools-tasklists-taskListId-tasks-taskId
+      description: Get tasks in the specified task list
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: timestamp
+          description: The last-synced timestamp.
+    put:
+      summary: Updates a task by id
+      operationId: put-users-userId-tools-tasklists-taskListId-tasks-taskId
+      responses:
+        '200':
+          description: OK
+      description: Updates the specified task
+      tags:
+        - Tools - Task List
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskItem'
+    delete:
+      summary: Deletes a task by id
+      operationId: delete-users-userId-tools-tasklists-taskListId-tasks-taskId
+      responses:
+        '200':
+          description: OK
+      tags:
+        - Tools - Task List
+      description: Deletes a task from the specified task list
+  '/users/{userId}/tools/tasklists/{taskListId}/tasks':
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: taskListId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      summary: Gets all tasks in task list
+      tags:
+        - Tools - Task List
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskItem'
+      operationId: get-users-userId-tools-tasklists-taskListId-tasks
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: timestamp
+          description: The last synched timestamp.
+      description: Gets all tasks in the specified task list
+    post:
+      summary: Creates a task in task list
+      operationId: post-users-userId-tools-tasklists-taskListId-tasks
+      responses:
+        '200':
+          description: OK
+      tags:
+        - Tools - Task List
+      description: Creates a new task in the specified task list
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskItem'
+  /logging/report:
+    post:
+      summary: Report log events
+      operationId: post-logging-report
+      responses:
+        '200':
+          description: OK
+      description: 'This endpoint defines a generic reporting framework which allows web/mobile application to report a set of named logs such as INFO, WARNING, ERROR, DEBUG.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  description: The user who caused or was affected by the crash.
+                serviceContext:
+                  type: object
+                  properties:
+                    deviceToken:
+                      type: string
+                      description: Represents the device token if available
+                    source:
+                      type: string
+                      enum:
+                        - IOS
+                        - ANDROID
+                        - WEB
+                      description: ''
+                    version:
+                      type: string
+                      description: Represents the source code version
+                eventContext:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      eventTime:
+                        type: string
+                        description: Time when the event occurred as provided in the error report.
+                      level:
+                        type: string
+                        enum:
+                          - INFO
+                          - WARNING
+                          - ERROR
+                          - DEBUG
+                      message:
+                        type: string
+                        description: The stack trace that was reported or logged by the service.
+                      reportLocation:
+                        type: object
+                        properties:
+                          filePath:
+                            type: string
+                            description: 'The source code filename, which can include a truncated relative path'
+                          functionName:
+                            type: string
+                            description: 'The value can include optional context like the class or package name. For example, my.package.MyClass.method'
+                      exception:
+                        type: object
+                      stacktrace:
+                        type: object
+                    required:
+                      - eventTime
+                      - level
+              required:
+                - serviceContext
+                - eventContext
+      tags:
+        - Logging
+  /users/health:
+    get:
+      summary: Get Health of User Service
+      tags:
+        - Health
+      responses:
+        '200':
+          description: OK
+      operationId: get-users-health
+      description: Gets health of user service
+  /messaging/health:
+    get:
+      summary: GET Messaging Service Health
+      tags:
+        - Health
+      responses:
+        '200':
+          description: OK
+      operationId: get-messaging-health
+      description: Gets the health of messaging service
+  '/sync/users/{userId}/push':
+    parameters:
+      - schema:
+          type: string
+        name: userId
+        in: path
+        required: true
+    post:
+      summary: Push changes to server
+      operationId: post-sync-users-userId-push
+      responses:
+        '200':
+          description: OK
+      description: Push client side changes to server
+      tags:
+        - Sync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+  /configurations:
+    get:
+      summary: GET configurations for app
+      tags:
+        - Configuration
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  UPGRADE_STATUS:
+                    type: string
+                    enum:
+                      - FORCE_UPDATE
+                      - UPDATE_AVAILAVLE
+                      - NONE
+                  WEB_URI:
+                    type: string
+                    format: uri
+                    example: 'https://dev.aweme.optimuztechnology.com'
+                  SHARE_URI:
+                    type: string
+                    format: uri
+                    example: 'https://share.dev.aweme.optimuztechnology.com'
+                  AUTH_URI:
+                    type: string
+                    format: uri
+                    example: 'https://aweme-dev.auth.us-east-1.amazoncognito.com'
+                  DATA_SYNC_INTERVAL:
+                    type: number
+                    description: Sync interval in seconds.
+                  API_TIMEOUT_INTERVAL:
+                    type: number
+                    description: Connection time out in seconds.
+                  NOTES_AUTO_SAVE_INTERVAL:
+                    type: number
+                  MAX_FILE_UPLOAD_SIZE:
+                    type: number
+                    description: Size in MB.
+                  DOCSTORE_BASE_URL:
+                    type: string
+                    format: uri
+                  ENABLE_VERIFY_OTP:
+                    type: boolean
+                    description: Enable the verification of OTP.
+      operationId: get-config-app
+      parameters:
+        - schema:
+            type: string
+            enum:
+              - IOS
+              - ANDROID
+              - WEB
+          in: query
+          name: platform
+          description: The platform for which the configuration is desired.
+        - schema:
+            type: string
+          in: query
+          name: appVersion
+          description: The version of the app.
+      description: Get dictionary of configurations for app.
+    parameters: []
+  /share/process:
+    post:
+      summary: Process a share action
+      operationId: post-share-process
+      responses:
+        '200':
+          description: 'OK. The QC is being processed for the first time. Returns a clone of the original conversation, and the public profile of the user.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversation:
+                    $ref: '#/components/schemas/Conversation'
+                  user:
+                    $ref: '#/components/schemas/UserModel'
+        '209':
+          description: The requested share has expired.
+        '210':
+          description: The requested share was not found on server. Probably retry later.
+        '211':
+          description: "OK. The QC has already been accessed by this user but the user's conversation has been deleted. Returns a clone of the original conversation and public profile of the user."
+          content:
+            application/json:
+              schema:
+                properties:
+                  conversation:
+                    $ref: '#/components/schemas/Conversation'
+                  user:
+                    $ref: '#/components/schemas/UserModel'
+                type: object
+        '212':
+          description: "OK. The QC has already been accessed by this user but the user's conversation is active. Returns the original conversation, and public profile of the user."
+          content:
+            application/json:
+              schema:
+                properties:
+                  conversation:
+                    $ref: '#/components/schemas/Conversation'
+                  user:
+                    $ref: '#/components/schemas/UserModel'
+                type: object
+      tags:
+        - Share
+      description: Process a share action
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - description: When QC is entered using the mobile/web app.
+                  properties:
+                    userId:
+                      type: string
+                    quickCode:
+                      type: string
+                - description: When QR is scanned using the app.
+                  properties:
+                    userId:
+                      type: string
+                    messageId:
+                      type: string
+              type: object
+            examples:
+              example-quickCode:
+                value:
+                  userId: '23'
+                  quickCode: 123456789
+              example-message:
+                value:
+                  userId: '23'
+                  messageId: eb31e2bc-cf73-4b24-98f5-acf69c3d165e
+              
+  '/qr/{quickCode}':
+    get:
+      summary: QR code URL
+      responses:
+        '200':
+          description: OK
+      operationId: get-share-qr
+      description: URL that is used to share via QR code.
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: cId
+          description: The conversation id.
+        - schema:
+            type: string
+          in: query
+          name: mId
+          description: The message id.
+        - schema:
+            type: string
+          in: query
+          name: msgType
+          description: The message type.
+      tags:
+        - Website
+    parameters:
+      - schema:
+          type: string
+        name: quickCode
+        in: path
+        required: true
+  '/share/qc/{quickCode}':
+    parameters:
+      - schema:
+          type: string
+        name: quickCode
+        in: path
+        required: true
+    patch:
+      summary: Updates a quick code share
+      operationId: patch-share-qc-quickCode
+      responses:
+        '200':
+          description: OK
+      description: Patches the active quick code share
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expiry:
+                  type: string
+                permissions:
+                  $ref: '#/components/schemas/SharePermissionEnum'
+                status:
+                  $ref: '#/components/schemas/ShareStatusEnum'
+      tags:
+        - Share
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: conversationId
+          description: The conversation whose QC needs to be updated.
+    get:
+      summary: Get the conversation for the specified Quick code
+      operationId: get-share-qc-quickCode
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+      description: Gets the conversation for specified quick code. (Readonly)
+      tags:
+        - Share
+        - Public
+  '/users/{userId}/sharedSettings':
+    parameters:
+      - schema:
+          type: string
+        name: userId
+        in: path
+        required: true
+    put:
+      summary: Update shared settings for user
+      operationId: put-users-userId-sharedSettings
+      responses:
+        '200':
+          description: OK
+      tags:
+        - Users
+      description: Updates shared settings for user
+      requestBody:
+        description: Collection of User Share setting
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sharedSettings:
+                  type: array
+                  description: Colelction of User share setting
+                  items:
+                    $ref: '#/components/schemas/UserShareSetting'
+      parameters:
+        - schema:
+            type: string
+          in: query
+          name: v
+          description: Version
+  /share/qc:
+    get:
+      summary: Generate a Quick Code
+      tags:
+        - Share
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  quickCode:
+                    type: string
+              examples:
+                example:
+                  value:
+                    quickCode: '576851696'
+        '209':
+          description: Preferred QC already taken.
+      operationId: get-share-qc
+      description: Generates a quick code
+      parameters:
+        - schema:
+            type: string
+            enum:
+              - NUMERIC
+              - ALPHANUMERIC_UPPERCASE
+              - ALPHANUMERIC_LOWERCASE
+              - ALPHANUMERIC_MIXEDCASE
+            default: NUMERIC
+            maxLength: 0
+          in: query
+          name: type
+          description: The type of qc
+        - schema:
+            type: integer
+          in: query
+          name: length
+          description: The length of the quick code.
+        - schema:
+            type: string
+          in: query
+          name: preferredQc
+  '/qc/{quickCode}':
+    parameters:
+      - schema:
+          type: string
+        name: quickCode
+        in: path
+        required: true
+    get:
+      summary: Quick Code URL
+      responses:
+        '200':
+          description: OK
+      operationId: get-qc-quickCode
+      description: Public URL for accessing QuickCode
+      tags:
+        - Website
+  '/users/publicProfile/{userId}':
+    parameters:
+      - schema:
+          type: string
+        name: userId
+        in: path
+        required: true
+    get:
+      summary: Get public profile of the user
+      tags:
+        - Users
+        - Public
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProfileField'
+        '209':
+          description: Public profile not enabled.
+      operationId: get-user-userId-publicProfile
+      description: Gets public profile of the user.
+  '/users/quicknotes/{quickNoteId}':
+    parameters:
+      - schema:
+          type: string
+        name: quickNoteId
+        in: path
+        required: true
+    get:
+      summary: Get quick note by Id
+      tags:
+        - Quick Notes
+        - Public
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuickNote'
+      operationId: get-users-quicknotes-quickNoteId
+      description: Gets quick notes by id (for public access)
+  '/share/qc/{quickCode}/conversations':
+    parameters:
+      - schema:
+          type: string
+        name: quickCode
+        in: path
+        required: true
+    post:
+      summary: Create a conversation for QuickCode share
+      operationId: post-share-qc-quickCode-conversations
+      responses:
+        '200':
+          description: OK
+      tags:
+        - Share
+        - Message
+      description: Create a conversation for a QuickCode share
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: A client generated UUID
+                type:
+                  $ref: '#/components/schemas/ConversationTypeEnum'
+                members:
+                  type: array
+                  description: Array of participating users
+                  items:
+                    type: object
+                    properties:
+                      userId:
+                        type: string
+                createdAt:
+                  type: string
+                  format: date-time
+                title:
+                  type: string
+                messages:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Message'
+  /utils/contactus:
+    post:
+      summary: Contact us
+      operationId: post-utils-contact
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: The payload is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      tags:
+        - Utils
+      description: Allows a user to contact the admin.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  description: The User id.
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                    phone:
+                      type: string
+                    email:
+                      type: string
+                message:
+                  type: string
+                  description: The message from user.
+                device:
+                  description: "User's device."
+                  type: object
+                  properties:
+                    platform:
+                      type: string
+                      description: The app platform
+                      enum:
+                        - ANDROID
+                        - IOS
+                        - WEB
+                    osVersion:
+                      type: string
+                      description: Version of the operating system.
+                    appVersion:
+                      type: string
+                      description: The app version being used by the user.
+    parameters: []
+  '/users/{userId}/devices':
+    parameters:
+      - schema:
+          type: string
+        name: userId
+        in: path
+        required: true
+    get:
+      summary: Gets devices registered to user
+      tags:
+        - Users
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserDevice'
+      operationId: get-users-userId-devices
+      description: Get devices registered to user
+    post:
+      summary: Register new device
+      operationId: post-users-userId-devices
+      responses:
+        '200':
+          description: OK
+      description: Register a new device for user
+      tags:
+        - Users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDevice'
+  '/users/{userId}/devices/{deviceId}':
+    parameters:
+      - schema:
+          type: string
+        name: userId
+        in: path
+        required: true
+      - schema:
+          type: string
+        name: deviceId
+        in: path
+        required: true
+    patch:
+      summary: Updates device info
+      operationId: patch-users-userId-devices-deviceId
+      responses:
+        '200':
+          description: OK
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserDevice'
+      description: Updates the device info for the specified device.
+      tags:
+        - Users
+    delete:
+      summary: Deregister device
+      operationId: delete-users-userId-devices-deviceId
+      responses:
+        '200':
+          description: OK
+      description: Deregister specified device for the user
+      tags:
+        - Users
+components:
+  schemas:
+    AddressField:
+      title: Address Field
+      type: object
+      description: "Represents an address field in a user's profile"
+      properties:
+        line1:
+          type: string
+          description: ''
+        street:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        country:
+          type: string
+        zip:
+          type: string
+    ContactField:
+      type: object
+      title: Contact Field
+      properties:
+        id:
+          type: string
+          description: The system assigned unique id for the contact
+        name:
+          type: string
+          description: An alternate name of the contact
+    DateField:
+      type: string
+      title: 'Profile Field: Date'
+      description: "Represents a date field in a user's profile"
+      format: date
+      x-examples:
+        example-1: {}
+    DocumentField:
+      title: 'Profile Field: Document'
+      type: object
+      description: Represents a document field that user has uploaded
+      properties:
+        docId:
+          type: string
+          description: Probably the url or unique id of the document
+        docName:
+          type: string
+        metadata:
+          type: object
+          properties:
+            contentType:
+              type: string
+              description: 'content-type of the file, present only for files (MIME type).'
+            icon:
+              type: string
+            category:
+              type: string
+              enum:
+                - UNCATEGORIZED
+                - IMAGE
+                - VIDEO
+                - AUDIO
+                - DOCUMENT
+            size:
+              type: string
+    EmailField:
+      title: 'Profile Field: Email'
+      type: object
+      properties:
+        address:
+          type: string
+          format: email
+          description: The email address
+        verified:
+          type: boolean
+          description: A value indicating whether this email has been verified or not
+      required:
+        - address
+      description: "Represents an email field in a user's profile"
+    LocationField:
+      title: 'Profile Field: Location'
+      type: object
+      properties:
+        lat:
+          type: number
+        long:
+          type: number
+      description: Represents a location field in user profile
+    PhoneField:
+      title: 'Profile Field: Phone'
+      type: object
+      description: Represents a user phone number
+      properties:
+        number:
+          type: string
+          description: 'The National (significant) number isthe national phone number digits. For example, +1 213 373 4253 is a US phone number and its national (significant) number is 213 373 4253.'
+        verified:
+          type: string
+          description: A value indicating whether this number has been verified
+        countryCode:
+          type: string
+          description: 'Country code means either a two-letter ISO country code (like US, IN, RU) or a special 001 country code used for non-geographical entities.'
+        dialingCode:
+          type: string
+          description: "Country calling code are the digits between the + and the national (significant) number when the number is written in international format. E.g. for US country calling code is 1, for France it's 33 and for India it's 91."
+        e164Format:
+          type: string
+          description: 'The number in e.164 format. Example: "+12133734253"'
+      required:
+        - e164Format
+    ProfileField:
+      title: Profile Field
+      type: object
+      description: Reprensets a field in the user profile
+      x-examples:
+        Sample string field:
+          value:
+            id: 43b0abb6-a678-4e47-b07d-e4ae46dc6bc4
+            category: FIRST_NAME
+            order: 1
+            referred: false
+            type: string
+            label: FIRST_NAME
+            data: John
+        Sample Phone field:
+          value:
+            id: 43b0abb6-a678-4e47-b07d-e4ae46dc6bc4
+            category: PHONE
+            order: 5
+            referred: true
+            type: PHONE
+            label: HOME
+            data:
+              code: '+91'
+              number: '9876543210'
+              verified: true
+        Sample email field:
+          value:
+            id: 43b0abb6-a678-4e47-b07d-e4ae46dc6bc4
+            category: EMAIL
+            order: 6
+            referred: true
+            type: EMAIL
+            label: WORK
+            data:
+              address: user@optimuz.tech
+              verified: true
+        Sample Address field:
+          value:
+            id: 43b0abb6-a678-4e47-b07d-e4ae46dc6bc4
+            category: ADDRESS
+            order: 7
+            referred: true
+            type: ADDRESS
+            label: HOME
+            data:
+              line1: '+91'
+              street: 711-2880 Nulla St.
+              city: Mankato
+              state: Mississippi
+              country: US
+              zip: '96522'
+        Sample date field:
+          value:
+            id: 43b0abb6-a678-4e47-b07d-e4ae46dc6bc4
+            category: DATE
+            order: 8
+            referred: true
+            type: DATE
+            label: BIRTHDAY
+            data: 12-25-1970
+        Sample document field:
+          value:
+            id: 43b0abb6-a678-4e47-b07d-e4ae46dc6bc4
+            category: DOCUMENT
+            type: DOCUMENT
+            order: 9
+            referred: true
+            label: filename.pdf
+            data:
+              value: 'https://domain.com/files/filename.pdf'
+        Sample contact field:
+          value:
+            id: 43b0abb6-a678-4e47-b07d-e4ae46dc6bc4
+            category: RELATION
+            order: 10
+            referred: true
+            type: RELATION
+            label: FATHER
+            data:
+              id: 43b0abb6-a678-4e47-b07d-e4ae46dc6bc4
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: client-generated UUID for this field
+        category:
+          $ref: '#/components/schemas/ProfileFieldCategory'
+        order:
+          type: integer
+        type:
+          $ref: '#/components/schemas/ProfileFieldType'
+        label:
+          type: string
+          description: "Example values for label: \nFIRST_NAME, LAST_NAME\nPREFERRED_NAME, COMPANY, DESIGNATION, etc\nPHONE:- WORK, MAIN, HOME, FAX, WHATSAPP, Other, etc\nEMAIL:- HOME, WORK, OTHER, etc\nADDRESS:- HOME, WORK, OTHER, etc\nDATE:- BIRTHDAY, ANNIVERSARY, etc\nRELATION:- PARENT, SIBLING, etc"
+        data:
+          anyOf:
+            - type: string
+              description: A basic text field
+            - $ref: '#/components/schemas/AddressField'
+            - $ref: '#/components/schemas/ContactField'
+            - $ref: '#/components/schemas/DateField'
+            - $ref: '#/components/schemas/DocumentField'
+            - $ref: '#/components/schemas/EmailField'
+            - $ref: '#/components/schemas/PhoneField'
+            - $ref: '#/components/schemas/LocationField'
+            - $ref: '#/components/schemas/CustomField'
+            - $ref: '#/components/schemas/ProfilePicField'
+        usedForConnection:
+          description: A value indicating whether this profile field has been used for connecting to contact.
+          type: boolean
+    UserBasicModel:
+      title: UserBasicModel
+      type: object
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        preferredName:
+          type: string
+        profilePhoto:
+          type: string
+          format: uri
+        createdAt:
+          type: string
+    UserModel:
+      title: User Model
+      allOf:
+        - $ref: '#/components/schemas/UserBasicModel'
+        - type: object
+          properties:
+            profileFields:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProfileField'
+            sharedSettings:
+              type: array
+              description: Share settings for this user.
+              items:
+                $ref: '#/components/schemas/UserShareSetting'
+            shares:
+              type: object
+              properties:
+                shareModes:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/BasicShare'
+            status:
+              type: string
+              enum:
+                - ACTIVE
+                - DELETED
+                - NEW
+              description: The status of the user.
+            updatedAt:
+              type: string
+    ErrorResponse:
+      title: ErrorResponse
+      type: object
+      properties:
+        responseCode:
+          type: string
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+        data:
+          oneOf:
+            - type: object
+            - type: array
+              items:
+                $ref: '#/components/schemas/MatchedUserBasicModel'
+            - $ref: '#/components/schemas/QuotaExceededModel'
+    SignUpUserRequest:
+      title: SignUpUserRequest
+      type: object
+      x-examples: {}
+      properties:
+        phone:
+          type: object
+          description: The phone number of user
+          properties:
+            number:
+              type: string
+              description: 'The National (significant) number isthe national phone number digits. For example, +1 213 373 4253 is a US phone number and its national (significant) number is 213 373 4253.'
+              example: '2133734253'
+            countryCode:
+              type: string
+              description: 'Country code means either a two-letter ISO country code (like US, IN, RU).'
+              example: IN
+            dialingCode:
+              type: string
+              description: "Country dialing code are the digits between the + and the national (significant) number when the number is written in international format. E.g. for US country calling code is 1, for France it's 33 and for India it's 91."
+              example: '91'
+            e164Format:
+              type: string
+              description: 'The number in e.164 format. Example: "+12133734253"'
+              example: '+919876543210'
+        email:
+          type: string
+          format: email
+          example: someone@somesite.com
+          description: The email of user
+        deviceToken:
+          type: string
+          description: The unique token assigned to the device
+          example: 'cru0YLTlRhM:APA91bG0P99IAa5R2rVO_eXabbnB9XZJBLoJqDk9eelRIZQCtoqr57ScrNAjQUjafXabXFuj7HH8Sm7Quw6Jj3YRmQMklrwRQnQd0RD3rGM-lUnjTE0DU8amIgB2v0BT-fMvVr-ldvJj'
+    SignUpUserResponse:
+      title: SignUpUserResponse
+      type: object
+      properties:
+        refNo:
+          type: string
+          format: uuid
+          example: 43b0abb6-a678-4e47-b07d-e4ae46dc6bc4
+          description: A unique reference number (UUID) to be used while verifying the user
+        userId:
+          type: integer
+          description: 'If the user already exists, then this will contain the userId'
+      description: The response to SignUp User request
+    VerifiedUserIdentity:
+      title: Verified User Identity
+      type: object
+      description: Represents a verified user identity used for login
+      properties:
+        idType:
+          type: string
+          enum:
+            - phone
+            - email
+        value:
+          type: string
+        status:
+          type: string
+        id:
+          type: integer
+          description: unique id of user identity
+      required:
+        - idType
+        - value
+    VerifyOtpRequest:
+      title: VerifyOtpRequest
+      type: object
+      description: Model to request otp verification
+      properties:
+        refNo:
+          type: string
+        OTP:
+          type: string
+          description: The One Time Password
+        type:
+          type: string
+          enum:
+            - Email
+            - Phone
+            - Both
+          description: 'The type of OTP to verify. Email, Phone or Both'
+    ContactSummary:
+      title: Contact Summary
+      type: object
+      description: "Model containing the basic fields for a User's contact"
+      properties:
+        id:
+          type: string
+          description: Contact id
+        matchedUserId:
+          type: string
+          description: The user in the system to whom this contact has been matched
+        firstName:
+          type: string
+          description: First name
+        lastName:
+          type: string
+          description: The last name of the contact
+        isFavourite:
+          type: boolean
+          description: A value indicating whether this contact marked as a favourite
+        connectedStatus:
+          $ref: '#/components/schemas/ConnectedStatusEnum'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2019-10-20T21:55:00Z'
+          description: A ISO8601 UTC datetime representing the created date
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2019-10-20T21:55:00Z'
+          description: A ISO8601 UTC datetime representing the last updated date
+        profilePhoto:
+          type: string
+          format: uri
+          description: The URI of contact photo
+        preferredName:
+          type: string
+          description: The preferred name/nickname
+      required:
+        - id
+    Contact:
+      title: Full Contact Details
+      type: object
+      description: Model containing detailed contact information
+      properties:
+        id:
+          type: string
+          description: Contact id
+        userId:
+          type: string
+          description: The User to whom this contact belongs
+        matchedUserId:
+          type: string
+          description: The user in the system to whom this contact has been matched
+        firstName:
+          type: string
+          description: First name
+        lastName:
+          type: string
+          description: The last name of the contact
+        isFavourite:
+          type: boolean
+          description: A value indicating whether this contact marked as a favourite
+        connectedStatus:
+          $ref: '#/components/schemas/ConnectedStatusEnum'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2019-10-20T21:55:00Z'
+          description: A ISO8601 UTC datetime representing the created date
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2019-10-20T21:55:00Z'
+          description: A ISO8601 UTC datetime representing the last updated date
+        profilePhoto:
+          type: string
+          format: uri
+          description: The URI of contact photo
+        preferredName:
+          type: string
+          description: The preferred name/nickname
+        profileFields:
+          type: array
+          description: List of profile fields for this contact
+          items:
+            $ref: '#/components/schemas/ProfileField'
+        sharedSettings:
+          type: array
+          description: Share settings specific to this contact.
+          items:
+            $ref: '#/components/schemas/ProfileFieldShareSetting'
+      required:
+        - id
+        - userId
+    ContactActionRequest:
+      title: Contact Action Request
+      type: object
+      description: "Model for requesting a create/update action on a User's contact"
+      properties:
+        profileFields:
+          type: array
+          description: List of profile fields for this contact
+          items:
+            $ref: '#/components/schemas/ProfileField'
+        preferredName:
+          type: string
+          description: The preferred name/nickname (Temporary field)
+        profilePhoto:
+          type: string
+          format: uri
+          description: The URI of contact photo
+        isFavourite:
+          type: boolean
+          description: A value indicating whether this contact marked as a favourite
+        lastName:
+          type: string
+          description: The last name of the contact (Temporary field)
+        firstName:
+          type: string
+          description: First name (Temporary field)
+        userId:
+          type: string
+          description: The User to whom this contact belongs
+      required:
+        - profileFields
+        - isFavourite
+        - userId
+    MessageType_LocationShare:
+      title: 'Message Type: Location Share'
+      type: object
+      properties:
+        lat:
+          type: string
+          description: 'Latitude '
+        long:
+          type: string
+          description: |
+            Longitude
+        text:
+          type: string
+          description: |
+            Goe location text
+      required:
+        - lat
+        - long
+    MessageType_LocationRequest:
+      title: 'Message Type: Location Request'
+      type: object
+      properties:
+        text:
+          type: string
+          description: |
+            Text : "Request for location"
+      required:
+        - text
+    MessageType_DocumentSend:
+      title: 'Message Type: DocumentSend'
+      type: object
+      properties:
+        docId:
+          description: The document Id
+          type: string
+        metadata:
+          type: object
+          description: The metadata. Should be filled in by the server if not provided by the client.
+          properties:
+            size:
+              type: string
+            hash:
+              type: string
+            mimeType:
+              type: string
+        readUri:
+          type: string
+          description: The read Uri given by the server
+        docName:
+          type: string
+          description: The name of the document. The server must populate this if not supplied by the client.
+      required:
+        - docId
+        - readUri
+    MessageType_Image:
+      title: 'Message Type: Image'
+      type: object
+      properties:
+        readUri:
+          type: string
+          description: The read Uri given by the server
+        docId:
+          description: The document Id
+          type: string
+        metadata:
+          type: object
+          description: 'Image format: jpeg, png, gif'
+          properties:
+            size:
+              type: string
+            hash:
+              type: string
+            mimeType:
+              type: string
+      required:
+        - readUri
+        - docId
+    MessageType_Callback:
+      title: 'Message Type: Request Callback'
+      type: object
+      properties:
+        text:
+          type: string
+          description: 'Text: "Call me back"'
+    MessageType_Text:
+      title: 'Message Type: Text'
+      type: object
+      properties:
+        text:
+          type: string
+          description: |
+            Text message content
+      required:
+        - text
+    Message:
+      title: Message
+      type: object
+      description: The model for a message
+      x-examples:
+        example-1:
+          value:
+            id: ae9d141a-7814-4257-8ad2-8659d7e01e4f
+            messageType: TEXT
+            createdAt: '2019-10-24T05:55:00Z'
+            data:
+              text: Did you reach school?
+        example-2:
+          value:
+            id: ae9d141a-7814-4257-8ad2-8659d7e01e43
+            messageType: LOCATION_SHARE
+            createdAt: '2019-10-24T05:00:00Z'
+            data:
+              lat: '91.22545'
+              long: '52.2254'
+              text: Geo Infopark
+      properties:
+        id:
+          type: string
+          description: MessageId can be a GUID/UUID
+        messageType:
+          $ref: '#/components/schemas/MessageTypes'
+        createdAt:
+          type: string
+          description: Created date-time in UTC
+        data:
+          anyOf:
+            - $ref: '#/components/schemas/MessageType_LocationShare'
+            - $ref: '#/components/schemas/MessageType_LocationRequest'
+            - $ref: '#/components/schemas/MessageType_DocumentSend'
+            - $ref: '#/components/schemas/MessageType_Image'
+            - $ref: '#/components/schemas/MessageType_Callback'
+            - $ref: '#/components/schemas/MessageType_Text'
+            - $ref: '#/components/schemas/MessageType_ConnectRequest'
+            - $ref: '#/components/schemas/MessageType_ConnectResponse'
+            - $ref: '#/components/schemas/MessageType_DocumentShare'
+            - $ref: '#/components/schemas/MessageType_QuickNoteShare'
+            - $ref: '#/components/schemas/MessageType_ContactSend'
+            - $ref: '#/components/schemas/MessageType_ProfileShare'
+        sender:
+          $ref: '#/components/schemas/UserBasicModel'
+        modes:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageMode'
+      required:
+        - id
+        - messageType
+    MessageType_ConnectRequest:
+      title: 'Message Type: Connect Request'
+      type: object
+      description: Model for Connect Request
+      properties:
+        srcContactId:
+          description: The unique id of the contact to connect to
+          type: string
+        matchedDestContacts:
+          type: array
+          description: "The list of destination user's contacts that match the source-User's verified credentials. This field will be filled by the server."
+          items:
+            $ref: '#/components/schemas/MatchedContactSummary'
+        destUser:
+          type: object
+          description: The matched user id of the contact to connect to. Provide this value only if available with the client.
+          properties:
+            id:
+              type: string
+            matchedOnFields:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProfileFieldType'
+      required:
+        - srcContactId
+    Conversation:
+      title: Conversation
+      type: object
+      description: Model to represent a single conversation
+      x-examples:
+        Conversation example:
+          value:
+            id: ae9d141a-7814-4257-8ad2-8659d7e01e4f
+            title: Did you reach school?
+            createdAt: '2019-10-24T05:55:00Z'
+            members:
+              - '1'
+              - '2'
+            messages:
+              - id: ae9d141a-7814-4257-8ad2-8659d7e01e4f
+                messageType: TEXT
+                createdAt: '2019-10-24T05:55:00Z'
+                data:
+                  text: Did you reach school?
+      properties:
+        id:
+          type: string
+          description: A client generated UUID
+        members:
+          type: array
+          description: List of members/participants in this conversation
+          items:
+            $ref: '#/components/schemas/ConversationUser'
+        createdAt:
+          type: string
+          format: date-time
+        title:
+          type: string
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        updatedAt:
+          type: string
+        type:
+          $ref: '#/components/schemas/ConversationTypeEnum'
+      required:
+        - id
+    ConversationUser:
+      title: Conversation User
+      type: object
+      description: A user that is part of a conversation
+      properties:
+        userId:
+          type: string
+          description: The id of user
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - COMPLETED
+            - DELETED
+        lastReadMessageId:
+          type: string
+        isFavourite:
+          type: boolean
+        updatedAt:
+          type: string
+          description: The client timestamp
+        userStatus:
+          type: string
+          enum:
+            - ACTIVE
+            - DELETED
+          description: Conversation user status
+        recipientType:
+          type: string
+          default: DEFAULT
+          enum:
+            - CREATOR
+            - BCC
+            - DEFAULT
+        user:
+          $ref: '#/components/schemas/UserBasicModel'
+    QuickNote:
+      title: Quick Note
+      allOf:
+        - $ref: '#/components/schemas/QuickNoteBasic'
+        - type: object
+          properties:
+            id:
+              type: string
+              description: A server generated id for the quick note
+            createdAt:
+              type: string
+              description: The UTC created timestamp
+            updatedAt:
+              type: string
+              description: The UTC updated timestamp
+            sharedBy:
+              $ref: '#/components/schemas/UserBasicModel'
+            permissions:
+              $ref: '#/components/schemas/SharePermissionEnum'
+            shares:
+              type: object
+              properties:
+                shareModes:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/BasicShare'
+                sharedWith:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SharedWithUser'
+      description: Model for a quick note
+    QuickNoteBasic:
+      title: Quick Note Basic
+      type: object
+      description: Model for a quick note
+      properties:
+        title:
+          type: string
+          description: The title of the quickNote
+        description:
+          type: string
+          description: The body of the quickNote
+        lastAccessedAt:
+          type: string
+          description: Last accessed at timestamp
+    MessageType_ConnectResponse:
+      title: 'Message Type: Connect Response'
+      type: object
+      properties:
+        srcContactId:
+          type: string
+          description: "The requestor's contact id. This is the same contactId that came with the Connect Request."
+        response:
+          type: string
+          enum:
+            - ACCEPTED
+            - REJECTED
+        destContact:
+          type: object
+          description: The contact Id of the destination User - the target of the connect request.
+          properties:
+            id:
+              type: string
+            matchedOnFields:
+              type: array
+              items:
+                $ref: '#/components/schemas/KeyValuePair'
+      required:
+        - srcContactId
+        - response
+    PushNotificationPayload:
+      title: PushNotificationPayload
+      type: object
+      description: The payload for push notification
+      properties:
+        notification:
+          type: object
+          required:
+            - body
+            - sound
+          properties:
+            body:
+              type: string
+              description: 'The text that must be displayed in the notification. (Eg: Conversation Title + Message snippet)'
+            sound:
+              type: string
+              enum:
+                - default
+        data:
+          type: object
+          properties:
+            click_action:
+              type: string
+              enum:
+                - FLUTTER_NOTIFICATION_CLICK
+              description: The click action
+            payload:
+              description: The payload based on the click action
+              oneOf:
+                - description: Payload for conversation notification click action
+                  properties:
+                    conversationId:
+                      type: string
+              type: object
+      required:
+        - notification
+        - data
+    MessageType_DocumentShare:
+      title: 'MessageType: DocumentShare'
+      type: object
+      description: Message Type for Document Share
+      properties:
+        docId:
+          type: string
+          description: The docstore document id (UUID)
+        permissions:
+          type: string
+          enum:
+            - OWNER
+            - VIEW
+            - EDIT
+          description: The permissions given to the recipients for this document.
+        readUri:
+          type: string
+        metadata:
+          type: object
+          description: The metadata. Should be filled in by the server if not provided by the client.
+          properties:
+            size:
+              type: string
+            hash:
+              type: string
+            mimeType:
+              type: string
+        docName:
+          type: string
+          description: The name of the document. The server must populate this if not supplied by the client.
+    MessageType_QuickNoteShare:
+      title: 'MessageType: QuickNoteShare'
+      type: object
+      properties:
+        quickNoteId:
+          type: string
+          description: The quick note id
+        permissions:
+          type: string
+          description: The permissions given to the recipients for this document.
+          enum:
+            - OWNER
+            - VIEW
+            - EDIT
+    SyncRecord:
+      title: SyncRecord
+      type: object
+      description: A synced record given to the client
+      x-examples:
+        example-1:
+          entity: USER
+          data:
+            updated: []
+            deleted: []
+      properties:
+        entity:
+          $ref: '#/components/schemas/SyncEntity'
+        data:
+          type: object
+          description: 'The action to be synced - CREATED, UPDATED, DELETED.'
+          properties:
+            updated:
+              type: array
+              items: {}
+            deleted:
+              type: array
+              items: {}
+      required:
+        - entity
+        - data
+    DocstoreDocument:
+      title: Docstore Document
+      description: A Docstore Document for a user
+      allOf:
+        - $ref: '#/components/schemas/DocstoreDocumentBasic'
+        - type: object
+          properties:
+            hash:
+              type: string
+              description: 64 bit integer representing hash of the contents of the file can be used to determine if two files are the same or to monitor file contents for changes. Present only for files (not for folders)
+            status:
+              type: string
+              enum:
+                - ACTIVE
+                - DELETED
+            createdAt:
+              type: string
+            updatedAt:
+              type: string
+            sharedBy:
+              $ref: '#/components/schemas/UserBasicModel'
+            permissions:
+              type: string
+              enum:
+                - OWNER
+                - VIEW
+                - EDIT
+              description: The permissions given to requesting user for this document
+            shares:
+              type: object
+              properties:
+                shareModes:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/BasicShare'
+                sharedWith:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SharedWithUser'
+    MessageType_ContactSend:
+      title: 'Message Type: Contact Send'
+      type: object
+      description: Model for Sending a Contact
+      properties:
+        contact:
+          $ref: '#/components/schemas/Contact'
+      required:
+        - contact
+    CustomButton:
+      title: Custom Button
+      type: object
+      description: Model for Custom Button
+      properties:
+        id:
+          type: string
+        contactId:
+          type: string
+        workflow:
+          $ref: '#/components/schemas/WorkflowDefinition'
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        title:
+          type: string
+        icon:
+          type: string
+          description: The icon to display for this button
+        desc:
+          type: string
+          description: A description of this custom button
+        status:
+          type: string
+        order:
+          type: integer
+    CustomField:
+      title: 'Profile Field: Custom Field'
+      type: object
+      properties:
+        text:
+          type: string
+        attachment:
+          type: object
+          properties:
+            docId:
+              type: string
+            docName:
+              type: string
+            metadata:
+              type: object
+              properties:
+                mimeType:
+                  type: string
+                size:
+                  type: string
+            readUri:
+              type: string
+    MessageTypes:
+      type: string
+      title: MessageTypes
+      description: A list of message types
+      enum:
+        - TEXT
+        - IMAGE
+        - DOCUMENT_SEND
+        - DOCUMENT_SHARE
+        - CALLBACK_REQUEST
+        - CONNECT_REQUEST
+        - LOCATION_REQUEST
+        - LOCATION_SHARE_REQUEST
+        - CONNECT_RESPONSE
+        - CONTACT_SEND
+        - QUICK_NOTE_SHARE
+        - PROFILE_SHARE
+    MessageMode:
+      type: object
+      title: MessageMode
+      description: The mode through which the message is sent
+      properties:
+        type:
+          type: string
+          enum:
+            - QUICK_CODE
+            - QR_CODE
+            - URL
+            - DEFAULT
+        value:
+          type: string
+          description: ''
+        expiry:
+          type: string
+          description: The expiry timestamp for this message.
+      required:
+        - type
+    ProfileFieldCategory:
+      type: string
+      title: ProfileFieldCategory
+      description: Enum defining the categories of user/contact profile field
+      enum:
+        - FIRST_NAME
+        - LAST_NAME
+        - PREFERRED_NAME
+        - ADDRESS
+        - EMAIL
+        - PHONE
+        - DOCUMENT
+        - DATE
+        - RELATION
+        - PROFILE_PICTURE
+        - DESIGNATION
+        - COMPANY
+    ProfileFieldType:
+      type: string
+      title: ProfileFieldType
+      enum:
+        - STRING
+        - EMAIL
+        - PHONE
+        - DATE
+        - LOCATION
+        - DOCUMENT
+        - CONTACT
+        - ADDRESS
+        - CUSTOM_FIELD
+      description: Enum defining the programming language type of this field. The data field must be deserialized into this type.
+    WorkflowState:
+      title: WorkflowState
+      type: object
+      description: Model for a single workflow state.
+      properties:
+        stateType:
+          type: string
+          enum:
+            - CALL
+            - SMS
+            - DISPLAY_MESSAGE
+            - LOCATION_SHARE
+            - TEXT
+        recipients:
+          type: array
+          description: The recipients (contactIds) for whome this state is to be executed.
+          items:
+            type: string
+        nextState:
+          type: string
+          description: The next state name. Must exactly match a key in the states map.
+        isEndState:
+          type: boolean
+        data:
+          description: The data for the messageType.
+          oneOf:
+            - $ref: '#/components/schemas/MessageType_Text'
+            - $ref: '#/components/schemas/MessageType_LocationRequest'
+            - type: object
+              properties:
+                phoneNo:
+                  type: string
+                  description: The phone number for calling (When stateType = CALL)
+              description: "Data for stateType 'CALL'"
+            - type: object
+              properties:
+                phoneNos:
+                  type: array
+                  description: List of phone numbers (for specifying non-contacts)
+                  items:
+                    type: string
+                message:
+                  type: string
+                  description: The SMS message body
+              description: "Data for state type 'SMS'"
+            - type: object
+              properties:
+                message:
+                  type: string
+              description: "For stateType 'DISPLAY_MESSAGE'"
+    WorkflowDefinition:
+      title: Workflow Definition
+      type: object
+      properties:
+        startState:
+          type: string
+          description: The name of the start state. This must exactly match with one of the keys in the states dictionary.
+        states:
+          type: object
+          description: A dictionary of workflow states. The key is the name of the state and the value is an instance of WorkFlowState.
+          additionalProperties:
+            $ref: '#/components/schemas/WorkflowState'
+      description: Model for workflow definition.
+      x-examples: {}
+    TaskItem:
+      title: Task Item
+      type: object
+      description: Model for Task Item
+      properties:
+        id:
+          type: string
+        description:
+          type: string
+        referenceType:
+          type: string
+          enum:
+            - CONTACT
+            - ADDRESS
+        notes:
+          type: string
+        data:
+          oneOf:
+            - $ref: '#/components/schemas/TaskItem_Address'
+            - $ref: '#/components/schemas/TaskItem_Contact'
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - DELETED
+            - COMPLETED
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        when:
+          type: string
+          description: ISO UTC Timestamp when the task is to be executed
+        order:
+          type: integer
+          description: The order of the task item within the task list.
+    TaskList:
+      title: Task List
+      type: object
+      description: Model for Task List
+      properties:
+        id:
+          type: string
+          description: The client generated unique id for the task list.
+        title:
+          type: string
+          description: The title of the task list
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - DELETED
+        shares:
+          type: object
+          description: Task share information
+          properties:
+            sharedBy:
+              $ref: '#/components/schemas/UserBasicModel'
+            permissions:
+              type: string
+            sharedWith:
+              type: array
+              items:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/UserBasicModel'
+                  permissions:
+                    type: string
+        tasks:
+          type: array
+          description: The list of tasks contained in this task list
+          items:
+            $ref: '#/components/schemas/TaskItem'
+        createdAt:
+          type: string
+          description: Created at timestamp.
+        updatedAt:
+          type: string
+          description: Updated at timestamp.
+        deletedAt:
+          type: string
+          description: Deleted at timestamp.
+        order:
+          type: integer
+          description: The order of the task list for the user.
+    TaskItem_Contact:
+      title: TaskItem_Contact
+      type: object
+      properties:
+        contacts:
+          type: array
+          items:
+            type: string
+    TaskItem_Address:
+      title: TaskItem_Address
+      type: object
+      properties:
+        address:
+          type: string
+        lat:
+          type: string
+        long:
+          type: string
+    SyncEntity:
+      type: string
+      enum:
+        - USER
+        - CONTACT
+        - CONVERSATION
+        - QUICK_NOTE
+        - CUSTOM_BUTTON
+        - TASK_LIST
+        - DOCUMENT
+    Dictionary:
+      type: array
+      title: Dictionary
+      description: Collection of Key value pairs
+      uniqueItems: true
+      items:
+        $ref: '#/components/schemas/KeyValuePair'
+    MatchedContactSummary:
+      title: MatchedContactSummary
+      allOf:
+        - $ref: '#/components/schemas/ContactSummary'
+        - type: object
+          properties:
+            matchedOnFields:
+              $ref: '#/components/schemas/Dictionary'
+          description: Dictionary of profile field type and its values that have been used for matching
+      description: Model for contact summary of matched contacts
+    MatchedUserBasicModel:
+      title: MatchedUserBasicModel
+      allOf:
+        - $ref: '#/components/schemas/UserBasicModel'
+        - type: object
+          description: Dictionary of profile field type and its values that have been used for matching
+          properties:
+            matchedOnFields:
+              $ref: '#/components/schemas/Dictionary'
+      description: Basic model to represent matched user
+    KeyValuePair:
+      title: KeyValuePair
+      type: object
+      description: Represents a key value pair
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+    ConnectedStatusEnum:
+      type: string
+      title: ConnectedStatusEnum
+      enum:
+        - notConnected
+        - connectRequested
+        - connectRejected
+        - connected
+      description: Contact connection status
+    ClientDataSyncEvent:
+      title: ClientDataSyncEvent
+      type: object
+      properties:
+        batchId:
+          type: string
+          description: A client-generated unique event id.
+        seq:
+          type: integer
+        events:
+          type: array
+          items:
+            type: object
+    ProfilePicField:
+      title: ProfilePicField
+      type: object
+      properties:
+        readUri:
+          type: string
+          description: The read URI for the profile picture.
+    DocstoreDocumentBasic:
+      type: object
+      title: Docstore Document Basic
+      description: A Docstore Document for a user
+      properties:
+        lastAccessedAt:
+          type: string
+          description: Last accessed timestamp.
+        orderId:
+          type: integer
+        metadata:
+          type: object
+          properties:
+            contentType:
+              type: string
+              description: 'content-type of the file, present only for files (MIME type)'
+            icon:
+              type: string
+            category:
+              type: string
+              enum:
+                - UNCATEGORIZED
+                - IMAGE
+                - VIDEO
+                - AUDIO
+                - DOCUMENT
+            size:
+              type: string
+            dimensions:
+              type: object
+              description: For images only
+              properties:
+                width:
+                  type: number
+                height:
+                  type: number
+        isFolder:
+          type: string
+          description: Indicates if this document is a directory. (Not Implemented)
+        docName:
+          type: string
+        docId:
+          type: string
+        readUri:
+          type: string
+          description: The Read URI.
+    ProfileFieldShareSetting:
+      title: ProfileFieldShareSetting
+      type: object
+      properties:
+        id:
+          type: string
+          description: The id of the profile field.
+        shared:
+          type: boolean
+          description: A value indicating whether sharing the specified field is allowed or not.
+    UserShareSetting:
+      title: User Share Setting
+      type: object
+      description: Share setting for a user
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - PUBLIC
+            - DEFAULT
+            - CUSTOM
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - DISABLED
+        profileFieldShareSettings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileFieldShareSetting'
+    BasicShare:
+      title: Basic Share
+      type: object
+      description: Share mode for an entity
+      properties:
+        id:
+          type: string
+        shareMode:
+          $ref: '#/components/schemas/ShareModeEnum'
+        quickCode:
+          type: string
+        expiry:
+          type: string
+        permissions:
+          $ref: '#/components/schemas/SharePermissionEnum'
+        createdAt:
+          type: string
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - INACTIVE
+        updatedAt:
+          type: string
+          description: The updated timestamp.
+        conversationId:
+          type: string
+          description: The conversation used as a vehicle for this share.
+        messageId:
+          type: string
+          description: The message used as a vehicle for this share.
+    SharePermissionEnum:
+      type: string
+      title: Share Permission
+      enum:
+        - OWNER
+        - EDIT
+        - VIEW
+    SharedWithUser:
+      title: Shared With User
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserBasicModel'
+        permission:
+          $ref: '#/components/schemas/SharePermissionEnum'
+      description: 'Represents a User with whom something (doc, note, etc) has been shared.'
+    ShareModeEnum:
+      type: string
+      title: Share Mode Enum
+      description: Reprensets the available share modes
+      enum:
+        - DEFAULT
+        - QUICK_CODE
+        - QR_CODE
+        - URL
+    EntityShare:
+      title: Entity Share
+      allOf:
+        - $ref: '#/components/schemas/BasicShare'
+        - type: object
+          properties:
+            entityId:
+              type: string
+            entityType:
+              type: string
+            sharedBy:
+              $ref: '#/components/schemas/UserBasicModel'
+      description: Model representing a shared entity
+    QuotaExceededModel:
+      title: Quota Exceeded Error Model
+      type: object
+      properties:
+        planName:
+          type: string
+        quotaCategory:
+          type: string
+        currentUsage:
+          type: string
+      description: Model representing a quota exceeded model.
+    ShareStatusEnum:
+      type: string
+      title: Quick Code Status Enum
+      enum:
+        - ACTIVE
+        - INACTIVE
+      description: Quick code status
+    MessageType_ProfileShare:
+      title: 'Message Type: Profile Share'
+      type: object
+      description: "Model for Sharing a User's public profile"
+      properties:
+        userId:
+          type: string
+        matchedDestContacts:
+          type: array
+          description: "The list of destination user's contacts that match the source-User's verified credentials. This field will be filled by the server."
+          items:
+            $ref: '#/components/schemas/MatchedContactSummary'
+        user:
+          $ref: '#/components/schemas/UserModel'
+      required:
+        - userId
+    ConversationTypeEnum:
+      type: string
+      enum:
+        - PRIVATE
+        - PUBLIC
+        - SYSTEM
+    UserDevice:
+      title: User Device
+      type: object
+      description: Represents a user device
+      properties:
+        id:
+          type: string
+        token:
+          type: string
+          description: a token assigned by the push notification service provider (Google Cloud Messaging or Apple Push Notification Service).
+        os:
+          type: string
+        osVersion:
+          type: string
+        appVersion:
+          type: string
+        lastAccessedAt:
+          type: string
+  securitySchemes:
+    DevAndStaging:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: 'https://aweme-dev.auth.us-east-1.amazoncognito.com/oauth2/token'
+          refreshUrl: ''
+          scopes:
+            AweMe-Beta/user.write: Write scope
+      description: 'To Authenticate Dev & Staging environments'
+    Production:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: 'https://auth.gobeyond.app/oauth2/token'
+          refreshUrl: ''
+          scopes:
+            'https://auth.gobeyond.app/write': Write scope
+      description: To authenticate in Production environment.
+security:
+  - DevAndStaging:
+      - AweMe-Beta/user.write
+  - Production:
+      - 'https://auth.gobeyond.app/write'
